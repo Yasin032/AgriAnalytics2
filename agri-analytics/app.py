@@ -9,15 +9,14 @@ Refactor highlights
    raw-HTML card wrappers around Streamlit widgets with Streamlit-native
    containers and a single, deduplicated CSS block. All 6 interactive
    drawers render cleanly with no clipping.
-2. Visuals: legacy dark-green theme replaced with a modern light palette
-   (off-white background, soft slate surfaces, indigo + sage accents,
-   charcoal typography).
+2. Visuals: the legacy Inter / forest-green theme is retained across the
+   refreshed layout, charts, and interactive controls.
 3. Charts: removed cluttered multi-series visuals; now uses intuitive pie /
    donut charts and clean metric cards.
 4. Quality: eliminated the repeated ``st.columns(4)[0]`` bug, consolidated
    duplicated logic, hardened error handling, and added input validation.
 
-Run with:  streamlit run agri_analytics_refactored.py
+Run with:  streamlit run agrianalytics.py
 """
 
 from __future__ import annotations
@@ -30,54 +29,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-# 1. Expand the main page area to maximum screen width
-st.set_page_config(layout="wide")
-
-# 2. Inject target overrides for the cloud container tabs and font colors
-st.markdown(
-    """
-    <style>
-    /* FORCE NAVIGATION TABS TO COVER THE FULL Space OF THE ROW */
-    div[data-testid="stHorizontalBlock"] {
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-    
-    /* Target the container housing the new Dashboard, Data Manager, Predictor tabs */
-    nav[data-testid="stAppNavbar"] {
-        width: 100% !important;
-        display: flex !important;
-        justify-content: space-between !important;
-        background-color: transparent !important;
-    }
-
-    div[data-testid="stAppNavbarItems"] {
-        width: 100% !important;
-        display: flex !important;
-        justify-content: space-around !important; /* Spreads tabs across the full space */
-    }
-
-    /* FIX CHANGED THEMES AND FONT COLORS TO SOLID DARK SLATE */
-    html, body, [data-testid="stWidgetLabel"], h1, h2, h3, h4, h5, h6, p, span, label, div {
-        color: #1E293B !important;
-    }
-
-    /* Force the active tab and unselected tab links to remain highly visible dark text */
-    button[data-baseweb="tab"] div {
-        color: #1E293B !important;
-        font-weight: 600 !important;
-    }
-
-    /* Expand the main overall body viewport */
-    .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 1.5rem !important;
-        max-width: 95% !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
@@ -112,100 +63,122 @@ DATA_COLUMNS: list[str] = [
 
 CROP_EMOJI = {"Corn": "🌽", "Wheat": "🌾", "Rice": "🍚", "Soybeans": "🫘", "Cotton": "☁️"}
 
-# Agricultural light palette
-C_BG        = "#e3f3e8"   # mint-green canvas
-C_SIDEBAR   = "#b9d96a"   # green-lime sidebar
-C_SURFACE   = "#dfeed8"   # visible soft-green surfaces
-C_BORDER    = "#c9d8c6"   # quiet forest-sage borders
-C_TEXT      = "#000000"   # primary typography
-C_TEXT_MUT  = "#000000"   # secondary typography
-C_ACCENT    = "#285d3d"   # forest-green primary accent
-C_ACCENT_2  = "#7aa832"   # green-lime secondary accent
-C_WARN      = "#ad792b"   # harvest-gold warning
-C_DANGER    = "#a94f44"  # muted clay-red warning
+# Legacy forest-green palette
+C_BG        = "#f8faf7"
+C_SIDEBAR   = "#1a3c1d"
+C_SURFACE   = "#ffffff"
+C_BORDER    = "#e8ede6"
+C_TEXT      = "#263626"
+C_TEXT_MUT  = "#6b7f6b"
+C_ACCENT    = "#1a3c1d"
+C_ACCENT_2  = "#2e7d32"
+C_WARN      = "#ef6c00"
+C_DANGER    = "#c62828"
 
-PIE_PALETTE = [C_ACCENT, C_ACCENT_2, "#d0a247", "#73918c", "#b2c18f"]
+PIE_PALETTE = px.colors.sequential.Greens[-5:][::-1]
 
 # ---------------------------------------------------------------------------
-# Styling — one consolidated CSS block (light theme, no layout hacks)
+# Styling — legacy green theme adapted to the refactored native layout
 # ---------------------------------------------------------------------------
 
 CUSTOM_CSS = """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
     html, body, [class*="css"], .stApp {
-        font-family: 'DM Sans', sans-serif; color: __TEXT__;
+        font-family: 'Inter', sans-serif !important; color: __TEXT__;
     }
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
-        background-color: __BG__;
+        background-color: __BG__ !important;
     }
-    .block-container { padding-top: 1.6rem; padding-bottom: 3rem; max-width: 1240px; }
+    .block-container {
+        width: 100%; max-width: 1400px;
+        padding: 1.5rem clamp(1rem, 3vw, 2rem) 2rem;
+    }
 
     /* ---- Sidebar ---- */
-    [data-testid="stSidebar"] { background-color: __SIDEBAR__; border-right: 1px solid __BORDER__; }
-    [data-testid="stSidebar"] * { color: __TEXT__; }
+    [data-testid="stSidebar"] {
+        background-color: __SIDEBAR__ !important;
+        border-right: 1px solid __SIDEBAR__;
+    }
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] * {
+        color: #e8f5e9 !important;
+    }
+    [data-testid="stSidebar"] .stMarkdown,
     [data-testid="stSidebar"] .stMarkdown p,
-    [data-testid="stSidebar"] label { color: __TEXT_MUT__ !important; font-size: 13px; }
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+        color: #c8e6c9 !important;
+    }
+    [data-testid="stSidebar"] [data-baseweb="select"] *,
+    [data-testid="stSidebar"] [data-baseweb="input"] * {
+        color: __TEXT__ !important;
+    }
 
     /* ---- Header ---- */
-    .app-header { padding: 8px 0 20px 16px; margin-bottom: 18px; border-left: 3px solid __ACCENT__; border-bottom: 1px solid __BORDER__; }
-    .app-header h1 { font-size: 30px; font-weight: 700; color: __TEXT__; margin: 0; }
-    .app-header h1 span { color: __TEXT__; }
-    .app-header p { font-size: 14px; color: __TEXT_MUT__; margin: 6px 0 0 0; }
+    .app-header { text-align: center; padding: 20px 0 30px; }
+    .app-header h1 { font-size: 32px !important; font-weight: 700 !important; color: __ACCENT__ !important; margin: 0 0 6px !important; }
+    .app-header h1 span { color: __ACCENT__ !important; }
+    .app-header p { font-size: 14px; color: __TEXT_MUT__; margin: 0; }
 
     /* ---- Section labels ---- */
     .section-label {
         font-size: 11px; font-weight: 700; text-transform: uppercase;
         letter-spacing: 1.2px; color: __TEXT_MUT__; margin: 22px 0 10px 0;
     }
+    [data-testid="stSidebar"] .section-label { color: #c8e6c9; }
 
-    /* ---- Metric cards (clean, minimal) ---- */
+    /* ---- Metric cards ---- */
     .metric-card {
-        background: __SURFACE__; border: 1px solid __BORDER__; border-radius: 8px;
-        padding: 18px; height: 100%; box-shadow: 0 2px 8px rgba(31, 57, 39, 0.05);
-        transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+        background: __SURFACE__; border: 1px solid __BORDER__; border-radius: 16px;
+        padding: 24px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        text-align: center; transition: box-shadow 0.2s ease;
     }
-    .metric-card:hover { transform: translateY(-2px); border-color: __ACCENT_2__; box-shadow: 0 6px 16px rgba(31, 57, 39, 0.10); }
-    .metric-card .icon { font-size: 22px; }
-    .metric-card .value { font-size: 26px; font-weight: 800; color: __TEXT__; margin: 6px 0 2px 0; }
-    .metric-card .label { font-size: 12px; font-weight: 600; color: __TEXT_MUT__; text-transform: uppercase; letter-spacing: 0.6px; }
+    .metric-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .metric-card .icon { font-size: 32px; margin-bottom: 8px; }
+    .metric-card .value { font-size: 28px; font-weight: 700; color: __ACCENT__; margin: 4px 0; overflow-wrap: anywhere; }
+    .metric-card .label { font-size: 13px; font-weight: 500; color: __TEXT_MUT__; text-transform: uppercase; letter-spacing: 0.5px; }
     .metric-card .delta { font-size: 12px; font-weight: 600; margin-top: 6px; }
-    .delta.up, .delta.down, .delta.flat { color: __TEXT__; }
+    .delta.up, .delta.down, .delta.flat { color: __ACCENT_2__; }
 
     /* ---- Interactive drawers ---- */
     [data-testid="stExpander"] {
         background: __SURFACE__; border: 1px solid __BORDER__; border-radius: 8px;
         margin-bottom: 10px; overflow: visible;
-        box-shadow: 0 1px 3px rgba(31, 57, 39, 0.035);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
     [data-testid="stExpander"] summary {
-        font-size: 14px; font-weight: 600; color: __TEXT__ !important;
+        font-size: 14px; font-weight: 600; color: __ACCENT__ !important;
         background: __SURFACE__ !important; padding: 14px 18px;
     }
-    [data-testid="stExpander"] summary * { color: __TEXT__ !important; }
-    [data-testid="stExpander"] [data-testid="stVerticalBlock"] * { color: __TEXT__ !important; }
-    [data-testid="stExpander"] summary:hover { color: __TEXT__; background: #f5f8f2 !important; }
+    [data-testid="stExpander"] summary * { color: __ACCENT__ !important; }
+    [data-testid="stExpander"] summary:hover { background: #e8f5e9 !important; }
     [data-testid="stExpander"] [data-testid="stVerticalBlock"] {
         padding: 4px 18px 16px 18px; gap: 0.6rem;
     }
 
     /* ---- Prediction banner ---- */
     .prediction-banner {
-        border-radius: 8px; padding: 28px 24px; text-align: center;
+        border-radius: 16px; padding: 28px 24px; text-align: center;
         border: 1px solid __BORDER__; background: __SURFACE__;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
-    .prediction-banner.high { border-color: #b6d2b2; background: #edf5eb; }
-    .prediction-banner.mid  { border-color: #e4d3a6; background: #faf3e2; }
-    .prediction-banner.low  { border-color: #e5c1bb; background: #f8ecea; }
-    .prediction-banner .big { font-size: 44px; font-weight: 800; color: __TEXT__; }
-    .prediction-banner .tag { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: __TEXT_MUT__; }
-    .prediction-banner .advice { font-size: 13px; color: __TEXT__; margin-top: 10px; line-height: 1.6; }
+    .prediction-banner.high { border: 2px solid #4caf50; background: #e8f5e9; color: #1b5e20; }
+    .prediction-banner.mid  { border: 2px solid #ffb300; background: #fff8e1; color: #e65100; }
+    .prediction-banner.low  { border: 2px solid #ef5350; background: #ffebee; color: #b71c1c; }
+    .prediction-banner .big { font-size: 44px; font-weight: 800; color: inherit; overflow-wrap: anywhere; }
+    .prediction-banner .tag { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: inherit; }
+    .prediction-banner .advice { font-size: 13px; color: inherit; margin-top: 10px; line-height: 1.6; }
 
     /* ---- Condition pills ---- */
     .pill { display: inline-block; padding: 3px 11px; border-radius: 999px;
             font-size: 11px; font-weight: 700; margin: 2px 4px 2px 0; }
-    .pill.ok, .pill.warn, .pill.bad { color: __TEXT__; }
+    .pill.ok { background: #e8f5e9; color: __ACCENT_2__; }
+    .pill.warn { background: #fff3e0; color: #ef6c00; }
+    .pill.bad { background: #ffebee; color: __DANGER__; }
 
     /* ---- Widget polish ---- */
     .stApp label,
@@ -215,16 +188,13 @@ CUSTOM_CSS = """
         color: __TEXT__ !important;
     }
     .stApp [data-baseweb="tag"] {
-        background: __SIDEBAR__ !important;
-        color: __TEXT__ !important;
+        background: #e8f5e9 !important;
+        color: __ACCENT__ !important;
         border: 1px solid __BORDER__;
     }
-    .stApp [data-baseweb="tag"] * { color: __TEXT__ !important; }
+    .stApp [data-baseweb="tag"] * { color: __ACCENT__ !important; }
     .stApp [data-testid="stSlider"] [role="slider"] {
         background: __ACCENT__ !important;
-    }
-    .stApp [data-testid="stSlider"] [data-baseweb="slider"] > div > div > div {
-        filter: hue-rotate(115deg) saturate(0.8);
     }
     .stApp [data-baseweb="select"] > div,
     .stApp [data-baseweb="input"] > div,
@@ -238,11 +208,11 @@ CUSTOM_CSS = """
     .stApp [data-baseweb="select"]:focus-within,
     .stApp [data-baseweb="input"]:focus-within {
         border-color: __ACCENT__ !important;
-        box-shadow: 0 0 0 2px rgba(40, 93, 61, 0.16);
+        box-shadow: 0 0 0 2px rgba(26, 60, 29, 0.16);
     }
     .stApp [data-testid="stNumberInputStepDown"],
     .stApp [data-testid="stNumberInputStepUp"] {
-        background: __SIDEBAR__ !important;
+        background: #e8f5e9 !important;
         color: __TEXT__ !important;
         border-color: __BORDER__ !important;
     }
@@ -250,48 +220,77 @@ CUSTOM_CSS = """
     .stApp [data-testid="stNumberInputStepUp"] svg {
         fill: currentColor !important;
     }
+    .stApp [data-testid="stSidebar"] label,
+    .stApp [data-testid="stSidebar"] [data-testid="stWidgetLabel"] *,
+    .stApp [data-testid="stSidebar"] [data-testid="stSlider"] p {
+        color: #e8f5e9 !important;
+    }
+    .stApp [data-testid="stSidebar"] .stMarkdown,
+    .stApp [data-testid="stSidebar"] .stMarkdown p,
+    .stApp [data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+        color: #c8e6c9 !important;
+    }
     [data-testid="stFileUploaderDropzone"] {
         background: __SURFACE__ !important;
         border: 1px dashed __BORDER__ !important;
     }
     [data-testid="stFileUploaderDropzone"] * { color: __TEXT__ !important; }
     [data-testid="stFileUploaderDropzone"] button {
-        background: __SIDEBAR__ !important;
+        background: #e8f5e9 !important;
         border: 1px solid __BORDER__ !important;
     }
     .stButton > button, .stDownloadButton > button, .stFormSubmitButton > button {
-        background: __SIDEBAR__; color: __TEXT__; border: 1px solid __BORDER__; border-radius: 8px;
-        padding: 9px 20px; font-weight: 600; font-size: 13px;
-        transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+        background: __ACCENT__ !important; color: #fff !important;
+        border: none !important; border-radius: 10px;
+        padding: 10px 24px; font-weight: 600; font-size: 13px;
+        transition: all 0.2s ease;
     }
     .stButton > button:hover, .stDownloadButton > button:hover,
-    .stFormSubmitButton > button:hover { background: #d5f0a5; color: __TEXT__; border-color: __ACCENT_2__; transform: translateY(-1px); }
+    .stFormSubmitButton > button:hover { background: __ACCENT_2__ !important; color: #fff !important; box-shadow: 0 4px 12px rgba(26,60,29,0.25); }
     .stButton > button:focus-visible, .stDownloadButton > button:focus-visible,
     .stFormSubmitButton > button:focus-visible { outline: 2px solid __ACCENT__; outline-offset: 2px; }
+    [data-testid="stSidebar"] .stButton > button,
+    [data-testid="stSidebar"] .stDownloadButton > button {
+        background: #e8f5e9 !important; color: __ACCENT__ !important;
+        border: 1px solid #c8e6c9 !important;
+    }
+    [data-testid="stSidebar"] .stButton > button:hover,
+    [data-testid="stSidebar"] .stDownloadButton > button:hover {
+        background: __ACCENT_2__ !important; color: #fff !important;
+    }
     .stTabs [data-baseweb="tab-list"] {
-        display: flex; width: 100%; gap: 6px;
-        background: __SIDEBAR__; padding: 4px; border-radius: 8px;
+        display: flex; width: 100%; gap: 8px;
+        background: __BG__; padding: 4px; border-radius: 12px;
     }
     .stTabs [data-baseweb="tab"] {
         flex: 1 1 0; min-width: 0; justify-content: center;
-        border-radius: 6px; font-weight: 600; font-size: 13px; color: __TEXT_MUT__;
+        padding: 10px 12px !important; border-radius: 10px !important;
+        font-weight: 500 !important; font-size: 13px !important; color: #5a7a5a !important;
+        background: transparent !important; border: none !important;
         transition: background 0.15s ease, color 0.15s ease;
     }
-    .stTabs [data-baseweb="tab"]:hover { background: rgba(255, 255, 255, 0.65); color: __TEXT__; }
-    .stTabs [aria-selected="true"] { background: __SURFACE__; color: __TEXT__; }
-    .stTabs [data-baseweb="tab-highlight"] { background: __ACCENT__ !important; }
+    .stTabs [data-baseweb="tab"]:hover { background: #e8f5e9 !important; color: __ACCENT__ !important; }
+    .stTabs [aria-selected="true"] { background: __ACCENT__ !important; color: #fff !important; font-weight: 600 !important; }
+    .stTabs [data-baseweb="tab-highlight"] { background: transparent !important; }
+
+    @media (max-width: 640px) {
+        .block-container { padding-left: 1rem; padding-right: 1rem; }
+        .stTabs [data-baseweb="tab-list"] { flex-wrap: wrap; }
+        .stTabs [data-baseweb="tab"] {
+            flex: 1 1 40%; min-width: max-content;
+            padding: 8px 6px !important; font-size: 12px !important;
+        }
+        .metric-card { padding: 18px 12px; }
+        .metric-card .value { font-size: 23px; }
+    }
 
     hr.soft { border: none; border-top: 1px solid __BORDER__; margin: 18px 0; }
 
-    /* Keep Streamlit's sidebar toggle available while hiding other chrome. */
-    #MainMenu, footer { visibility: hidden; }
     header[data-testid="stHeader"] { background: transparent; }
     header [data-testid="stExpandSidebarButton"] {
-        color: __TEXT__ !important; background: __SIDEBAR__;
+        color: __ACCENT__ !important; background: #e8f5e9;
         border: 1px solid __BORDER__; border-radius: 8px;
     }
-    header [data-testid="stBaseButton-header"],
-    header [data-testid="stMainMenuButton"] { visibility: hidden; }
     </style>
 """.replace("__BG__", C_BG).replace("__SIDEBAR__", C_SIDEBAR) \
     .replace("__SURFACE__", C_SURFACE) \
@@ -481,8 +480,8 @@ def style_fig(fig: go.Figure, height: int = 340) -> go.Figure:
     fig.update_layout(
         height=height, margin=dict(l=10, r=10, t=30, b=10),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="DM Sans, sans-serif", size=12, color=C_TEXT),
-        title_font=dict(size=14, color=C_TEXT),
+        font=dict(family="Inter, sans-serif", size=12, color=C_TEXT),
+        title_font=dict(size=14, color=C_ACCENT),
         legend=dict(orientation="h", yanchor="bottom", y=-0.18,
                     xanchor="center", x=0.5, font=dict(size=11)))
     axis_style = dict(
@@ -513,7 +512,7 @@ def render_sidebar() -> tuple[list[str], tuple[int, int], tuple[int, int]]:
     with st.sidebar:
         st.markdown(
             f"### {APP_TITLE} 🌱\n"
-            f"<span style='color:{C_TEXT_MUT};font-size:12px;'>"
+            f"<span style='color:#c8e6c9;font-size:12px;'>"
             f"{APP_TAGLINE}</span>",
             unsafe_allow_html=True)
         st.divider()
@@ -597,7 +596,7 @@ def render_dashboard(selected: list[str], rain_rng, temp_rng) -> None:
     # Simple per-crop average bar (single series, sorted — instantly readable)
     fig = px.bar(best.reset_index().rename(columns={"index": "Crop"}),
                  x="Crop_Type", y="Yield_tons_ha",
-                 color="Yield_tons_ha", color_continuous_scale=["#e3ecdc", C_ACCENT],
+                 color="Yield_tons_ha", color_continuous_scale="Greens",
                  labels={"Yield_tons_ha": "Avg yield (t/ha)", "Crop_Type": ""},
                  title="Average yield per crop")
     fig.update_layout(coloraxis_showscale=False, showlegend=False)
