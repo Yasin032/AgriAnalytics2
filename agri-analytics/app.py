@@ -30,29 +30,49 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-# Force the canvas to wide mode to give your columns room to breathe
+# 1. Expand the main page area to maximum screen width
 st.set_page_config(layout="wide")
 
-# All-in-one CSS patch for text contrast, spacing alignment, and layout fixes
+# 2. Inject target overrides for the cloud container tabs and font colors
 st.markdown(
     """
     <style>
-    /* 1. Reset text elements to a strong, high-contrast dark slate color */
-    html, body, [data-testid="stWidgetLabel"], h1, h2, h3, h4, h5, h6, p, span, label {
-        color: #1E293B !important;
+    /* FORCE NAVIGATION TABS TO COVER THE FULL Space OF THE ROW */
+    div[data-testid="stHorizontalBlock"] {
+        width: 100% !important;
+        max-width: 100% !important;
     }
     
-    /* 2. Optimize the main viewport container width so things expand horizontally */
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 2rem !important;
-        max-width: 95% !important;
+    /* Target the container housing the new Dashboard, Data Manager, Predictor tabs */
+    nav[data-testid="stAppNavbar"] {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        background-color: transparent !important;
     }
 
-    /* 3. Strip out old fixed column limits that rotate layouts on cloud screens */
-    [data-testid="column"] {
-        width: auto !important;
-        flex: 1 1 0% !important;
+    div[data-testid="stAppNavbarItems"] {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: space-around !important; /* Spreads tabs across the full space */
+    }
+
+    /* FIX CHANGED THEMES AND FONT COLORS TO SOLID DARK SLATE */
+    html, body, [data-testid="stWidgetLabel"], h1, h2, h3, h4, h5, h6, p, span, label, div {
+        color: #1E293B !important;
+    }
+
+    /* Force the active tab and unselected tab links to remain highly visible dark text */
+    button[data-baseweb="tab"] div {
+        color: #1E293B !important;
+        font-weight: 600 !important;
+    }
+
+    /* Expand the main overall body viewport */
+    .block-container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 1.5rem !important;
+        max-width: 95% !important;
     }
     </style>
     """,
