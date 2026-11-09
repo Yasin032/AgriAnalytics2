@@ -95,36 +95,40 @@ CUSTOM_CSS = """
         width: 100%; max-width: 1400px;
         padding: 1.5rem clamp(1rem, 3vw, 2rem) 2rem;
     }
-    /* ---- FORCE NAVIGATION TABS TO COVER FULL WIDTH SPACE OF ROW ---- */
-    .stTabs {
+    /* ---- HEAVY-DUTY FORCED FULL-WIDTH HORIZONTAL NAVIGATION OVERRIDE ---- */
+    div[data-testid="stTabs"] {
         width: 100% !important;
         max-width: 100% !important;
-        display: block !important;
     }
     
-    .stTabs [data-baseweb="tab-list"] {
+    div[data-baseweb="tab-list"] {
         display: flex !important; 
         width: 100% !important; 
         max-width: 100% !important;
-        gap: 8px !important;
-        background: __SIDEBAR__ !important; 
+        gap: 10px !important;
+        background: #E2E8F0 !important; /* Forces uniform slate row background */
         padding: 6px !important; 
         border-radius: 8px !important;
-        justify-content: space-between !important;
     }
     
-    .stTabs [data-baseweb="tab"] {
+    /* Target the buttons directly and force each to expand equally to fill the row */
+    div[data-baseweb="tab-list"] > button {
         flex: 1 1 0% !important; 
-        width: 100% !important;
-        min-width: 0 !important; 
+        max-width: 100% !important;
+        min-width: 0 !important;
+        text-align: center !important;
         justify-content: center !important;
         border-radius: 6px !important; 
         font-weight: 600 !important; 
         font-size: 14px !important; 
-        color: __TEXT_MUT__ !important;
+        padding: 12px 0px !important;
         background: transparent !important;
-        text-align: center !important;
-        padding: 10px 0px !important;
+    }
+    
+    /* Active selected tab state formatting */
+    div[data-baseweb="tab-list"] > button[aria-selected="true"] {
+        background: #FFFFFF !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
     }
 
     /* ---- Sidebar ---- */
