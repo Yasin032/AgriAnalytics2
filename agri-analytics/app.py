@@ -30,23 +30,29 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-# 1. Force the layout to use the full screen width to prevent the header from cutting off
+# Force the canvas to wide mode to give your columns room to breathe
 st.set_page_config(layout="wide")
 
-# 2. Inject explicit CSS to force correct text colors and fix container clipping padding
+# All-in-one CSS patch for text contrast, spacing alignment, and layout fixes
 st.markdown(
     """
     <style>
-    /* Fix global font colors to be highly visible dark slate instead of changed cloud presets */
-    html, body, [data-testid="stWidgetLabel"], h1, h2, h3, h4, h5, h6, p {
+    /* 1. Reset text elements to a strong, high-contrast dark slate color */
+    html, body, [data-testid="stWidgetLabel"], h1, h2, h3, h4, h5, h6, p, span, label {
         color: #1E293B !important;
     }
     
-    /* Remove restricted margins that cause the header section column to wrap or look half-written */
+    /* 2. Optimize the main viewport container width so things expand horizontally */
     .block-container {
         padding-top: 2rem !important;
         padding-bottom: 2rem !important;
-        max-width: 100% !important;
+        max-width: 95% !important;
+    }
+
+    /* 3. Strip out old fixed column limits that rotate layouts on cloud screens */
+    [data-testid="column"] {
+        width: auto !important;
+        flex: 1 1 0% !important;
     }
     </style>
     """,
