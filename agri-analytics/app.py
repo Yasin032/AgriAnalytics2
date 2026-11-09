@@ -30,6 +30,28 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+# 1. Force the layout to use the full screen width to prevent the header from cutting off
+st.set_page_config(layout="wide")
+
+# 2. Inject explicit CSS to force correct text colors and fix container clipping padding
+st.markdown(
+    """
+    <style>
+    /* Fix global font colors to be highly visible dark slate instead of changed cloud presets */
+    html, body, [data-testid="stWidgetLabel"], h1, h2, h3, h4, h5, h6, p {
+        color: #1E293B !important;
+    }
+    
+    /* Remove restricted margins that cause the header section column to wrap or look half-written */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 100% !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
