@@ -95,6 +95,37 @@ CUSTOM_CSS = """
         width: 100%; max-width: 1400px;
         padding: 1.5rem clamp(1rem, 3vw, 2rem) 2rem;
     }
+    /* ---- FORCE NAVIGATION TABS TO COVER FULL WIDTH SPACE OF ROW ---- */
+    .stTabs {
+        width: 100% !important;
+        max-width: 100% !important;
+        display: block !important;
+    }
+    
+    .stTabs [data-baseweb="tab-list"] {
+        display: flex !important; 
+        width: 100% !important; 
+        max-width: 100% !important;
+        gap: 8px !important;
+        background: __SIDEBAR__ !important; 
+        padding: 6px !important; 
+        border-radius: 8px !important;
+        justify-content: space-between !important;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        flex: 1 1 0% !important; 
+        width: 100% !important;
+        min-width: 0 !important; 
+        justify-content: center !important;
+        border-radius: 6px !important; 
+        font-weight: 600 !important; 
+        font-size: 14px !important; 
+        color: __TEXT_MUT__ !important;
+        background: transparent !important;
+        text-align: center !important;
+        padding: 10px 0px !important;
+    }
 
     /* ---- Sidebar ---- */
     [data-testid="stSidebar"] {
